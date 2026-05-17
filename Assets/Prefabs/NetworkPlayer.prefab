@@ -17,6 +17,8 @@ GameObject:
   - component: {fileID: 6910734933487594412}
   - component: {fileID: 4091844324709531486}
   - component: {fileID: 7903004262188675080}
+  - component: {fileID: 2908255159899784024}
+  - component: {fileID: 7141872196485587041}
   m_Layer: 0
   m_Name: NetworkPlayer
   m_TagString: Untagged
@@ -156,7 +158,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1177716454
+  GlobalObjectIdHash: 1860827142
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -244,3 +246,34 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
+--- !u!114 &2908255159899784024
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8481783575352928960}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 18c5e3a647ee11d4f9a818e206099a10, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerColorManager
+  ShowTopMostFoldoutHeaderGroup: 1
+  playerRenderer: {fileID: 4866460656447202722}
+  playerMaterials:
+  - {fileID: 2100000, guid: ea8687c7c189c2042a41661b392ec4f1, type: 2}
+  - {fileID: 2100000, guid: 851cccb5f8c9d994c876a57233a7ab37, type: 2}
+  - {fileID: 2100000, guid: 6b63a52e548113b40bbaf0064a6bfe8e, type: 2}
+--- !u!114 &7141872196485587041
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8481783575352928960}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 419cf4599e5261141b47e56454772adf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalPlayerCameraTarget
+  ShowTopMostFoldoutHeaderGroup: 1

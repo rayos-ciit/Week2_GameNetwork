@@ -3,6 +3,7 @@ using Unity.Netcode;
 public class NetworkPlayerAttack : NetworkBehaviour
 {
     [SerializeField] float attackRange = 3f;
+    [SerializeField] float jumpForce = 8f;
     [SerializeField] int damageAmount = 25;
     [SerializeField] LayerMask playerLayer;
     [SerializeField] KeyCode playerAttackKey = KeyCode.Space;
@@ -23,6 +24,7 @@ public class NetworkPlayerAttack : NetworkBehaviour
         {
             RequestAttackServerRpc();
         }
+        
     }
 
     [ServerRpc]

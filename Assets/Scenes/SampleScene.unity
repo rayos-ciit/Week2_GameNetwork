@@ -3482,7 +3482,7 @@ MonoBehaviour:
   joinCodeInput: {fileID: 1322505431}
   joinCodeText: {fileID: 1788056267}
   statusText: {fileID: 285920212}
-  PlayerCountText: {fileID: 0}
+  PlayerCountText: {fileID: 1012725154}
   maxConnections: 4
 --- !u!4 &1820149839
 Transform:

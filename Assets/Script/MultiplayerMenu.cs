@@ -30,13 +30,13 @@ public class MultiplayerMenu : NetworkBehaviour
 
     void Update()
     {
-        // Find all objects with the "Player" tag every frame
-        GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
-
-        int playerCount = players.Length;
-
-        // Update TMP text
-        PlayerCountText.text = "Players: " + playerCount;
+        // Only check if the NetworkManager is active
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            // Directly grab the count of connected clients
+            int playerCount = NetworkManager.Singleton.ConnectedClientsIds.Count;
+            PlayerCountText.text = "Players: " + playerCount;
+        }
     }
 
     private async System.Threading.Tasks.Task InitializeUnityServices()

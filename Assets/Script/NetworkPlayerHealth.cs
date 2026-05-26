@@ -2,6 +2,17 @@ using UnityEngine;
 using Unity.Netcode;
 public class NetworkPlayerHealth : NetworkBehaviour
 {
+    [ClientRpc]
+    private void ShowDamageClientRpc(int amount)
+    {
+        if (damageTextPrefab != null)
+        {
+            GameObject popup = Instantiate(damageTextPrefab, transform.position + Vector3.up, Quaternion.identity);
+            popup.GetComponent<TMPro.TMP_Text>().text = amount.ToString();
+        }
+    }
+    
+    [SerializeField] private GameObject damageTextPrefab;
     [SerializeField] private int maxHealth = 100;
     //Network-synced health variable
     public NetworkVariable<int> CurrentHealth = new NetworkVariable<int>(
@@ -31,6 +42,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
     {
         if (!IsServer) {return;}    
         CurrentHealth.Value -= damageAmount;
+        ShowDamageClientRpc(damageAmount);
         CurrentHealth.Value = Mathf.Clamp(CurrentHealth.Value,0,maxHealth);
         if (CurrentHealth.Value <= 0)
         {

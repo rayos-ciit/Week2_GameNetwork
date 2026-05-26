@@ -3,7 +3,7 @@ using Unity.Netcode;
 
 public class NetworkPlayerController : NetworkBehaviour
 {
-
+    [SerializeField] float jumpForce = 8f;
     [SerializeField] float moveSpeed = 5f;
     [SerializeField] float gravity = 9.8f;
     [SerializeField] float groundedGravity = -2f;
@@ -35,6 +35,10 @@ public class NetworkPlayerController : NetworkBehaviour
         else
         {
             MovePlayerRpc(inputDirection);
+        }
+        if (Input.GetButtonDown("Jump") && characterController.isGrounded)
+        {
+            verticalVelocity = jumpForce; // Set the upward velocity
         }
     }
     [Rpc(SendTo.Server)]

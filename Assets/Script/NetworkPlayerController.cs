@@ -1,11 +1,12 @@
-using Unity.Netcode;
 using UnityEngine;
+using Unity.Netcode;
 
 public class NetworkPlayerController : NetworkBehaviour
 {
-    [SerializeField] private float moveSpeed = 5f;
-    [SerializeField] private float gravity = -20f;
-    [SerializeField] private float groundedGravity = -2f;
+
+    [SerializeField] float moveSpeed = 5f;
+    [SerializeField] float gravity = 9.8f;
+    [SerializeField] float groundedGravity = -2f;
 
     private CharacterController characterController;
     private float verticalVelocity;
@@ -15,29 +16,29 @@ public class NetworkPlayerController : NetworkBehaviour
         characterController = GetComponent<CharacterController>();
     }
 
-    private void Update()
+    // Update is called once per frame
+    void Update()
     {
         if (!IsOwner)
         {
-            return;
+
+            return; 
         }
 
-        float horizontalInput = Input.GetAxisRaw("Horizontal");
-        float verticalInput = Input.GetAxisRaw("Vertical");
-
-        Vector2 movementInput = new Vector2(horizontalInput, verticalInput);
-
+        float horizontalInput = Input.GetAxis("Horizontal");
+        float verticalInput = Input.GetAxis("Vertical");
+        Vector2 inputDirection = new Vector2 (horizontalInput, verticalInput);
         if (IsServer)
         {
-            MovePlayer(movementInput);
+            MovePlayer(inputDirection);
         }
         else
         {
-            MovePlayerRpc(movementInput);
+            MovePlayerRpc(inputDirection);
         }
     }
-
     [Rpc(SendTo.Server)]
+
     private void MovePlayerRpc(Vector2 movementInput)
     {
         MovePlayer(movementInput);
@@ -45,7 +46,7 @@ public class NetworkPlayerController : NetworkBehaviour
 
     private void MovePlayer(Vector2 movementInput)
     {
-        if (characterController.isGrounded && verticalVelocity < 0f)
+        if (characterController.isGrounded && verticalVelocity < 0)
         {
             verticalVelocity = groundedGravity;
         }
@@ -53,15 +54,12 @@ public class NetworkPlayerController : NetworkBehaviour
         {
             verticalVelocity += gravity * Time.deltaTime;
         }
-
-        Vector3 moveDirection = new Vector3(movementInput.x, 0f, movementInput.y).normalized;
-
+        Vector3 moveDirection = new Vector3(movementInput.x, 0, movementInput.y).normalized;
         Vector3 horizontalMovement = moveDirection * moveSpeed;
-
         Vector3 verticalMovement = Vector3.up * verticalVelocity;
-
         Vector3 finalMovement = horizontalMovement + verticalMovement;
-
         characterController.Move(finalMovement * Time.deltaTime);
+
     }
+    
 }

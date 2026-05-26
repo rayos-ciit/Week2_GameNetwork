@@ -297,7 +297,7 @@ MonoBehaviour:
   playerLayer:
     serializedVersion: 2
     m_Bits: 256
-  playerAttackKey: 32
+  playerAttackKey: 277
 --- !u!114 &-7729684027834450856
 MonoBehaviour:
   m_ObjectHideFlags: 0

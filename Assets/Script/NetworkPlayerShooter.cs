@@ -24,16 +24,20 @@ public class NetworkPlayerShooter : NetworkBehaviour
     {
         if (!IsOwner) return;
 
-        // Fast Charge Powerup Logic
+        if (GameManager.Instance != null && GameManager.Instance.matchState.Value != 2)
+        {
+            isCharging = false;
+            currentCharge = 0f;
+            if (chargeSlider != null) chargeSlider.value = 0f;
+            return;
+        }
+
         if (fastChargeTimer > 0)
         {
             fastChargeTimer -= Time.deltaTime;
-            chargeRate = 2f; // Charges twice as fast
+            chargeRate = 2f; 
         }
-        else
-        {
-            chargeRate = 1f;
-        }
+        else chargeRate = 1f;
 
         if (Input.GetKey(fireKey))
         {
@@ -43,22 +47,33 @@ public class NetworkPlayerShooter : NetworkBehaviour
         }
         else if (Input.GetKeyUp(fireKey) && isCharging)
         {
-            float chargePercentage = currentCharge / maxChargeTime;
+            float chargePct = currentCharge / maxChargeTime;
             
-            // Only shoot if they charged at least a little bit (e.g., 20%)
-            if (chargePercentage >= 0.2f)
+            if (chargePct >= 0.2f)
             {
-                RequestShootServerRpc(bulletSpawnPoint.position, bulletSpawnPoint.forward, chargePercentage, OwnerClientId);
+                // CROSSHAIR AIMING LOGIC
+                Vector3 aimDirection = bulletSpawnPoint.forward;
+                if (Camera.main != null)
+                {
+                    Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
+                    if (Physics.Raycast(ray, out RaycastHit hit, 100f))
+                    {
+                        aimDirection = (hit.point - bulletSpawnPoint.position).normalized; // Aim at exactly what you hit
+                    }
+                    else
+                    {
+                        aimDirection = (ray.GetPoint(100f) - bulletSpawnPoint.position).normalized; // Aim far off into the sky
+                    }
+                }
+
+                RequestShootServerRpc(bulletSpawnPoint.position, aimDirection, chargePct, OwnerClientId);
             }
             
             isCharging = false;
             currentCharge = 0f;
         }
 
-        if (chargeSlider != null)
-        {
-            chargeSlider.value = currentCharge / maxChargeTime;
-        }
+        if (chargeSlider != null) chargeSlider.value = currentCharge / maxChargeTime;
     }
 
     public void ApplyFastCharge(float duration)
@@ -71,13 +86,15 @@ public class NetworkPlayerShooter : NetworkBehaviour
     {
         GameObject projectileInstance = Instantiate(bulletPrefab, spawnPosition, Quaternion.LookRotation(spawnDirection));
         
+        // WE MOVED THIS UP: We MUST spawn the object on the network first...
+        NetworkObject networkObject = projectileInstance.GetComponent<NetworkObject>();
+        networkObject.Spawn();
+
+        // ...BEFORE we initialize it, so the NetworkVariables are allowed to accept the data!
         NetworkProjectile projScript = projectileInstance.GetComponent<NetworkProjectile>();
         if (projScript != null)
         {
             projScript.Initialize(chargePct, shooterId);
         }
-
-        NetworkObject networkObject = projectileInstance.GetComponent<NetworkObject>();
-        networkObject.Spawn();
     }
 }

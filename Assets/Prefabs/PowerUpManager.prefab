@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 968136514
+  GlobalObjectIdHash: 4077757
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -74,6 +74,6 @@ MonoBehaviour:
   powerUpPrefabs:
   - {fileID: 7132500553292117094, guid: 26012ec7603a10649968a1eea9ac3776, type: 3}
   - {fileID: 989066054469682753, guid: b888d23d93169a54590c7569d5816f2d, type: 3}
-  spawnAreaMin: {x: -10, y: -10}
-  spawnAreaMax: {x: 10, y: 10}
+  spawnAreaMin: {x: -4.5, y: -4.5}
+  spawnAreaMax: {x: 4.5, y: 4.5}
   spawnInterval: 10

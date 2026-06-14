@@ -5,16 +5,17 @@ public class NetworkPlayerAttack : NetworkBehaviour
 {
     [SerializeField] private int attackDamage = 10;
     [SerializeField] private float attackRange = 2f;
-    [SerializeField] private LayerMask playerLayer; //Layer mask to specify what can be attacked
-    [SerializeField] private KeyCode playerAttackKey = KeyCode.Space; //Key to perform attack
+    [SerializeField] private LayerMask playerLayer; 
+    
+    // Changed to Mouse1 (Right Click) so it doesn't conflict with your Spacebar Jump!
+    [SerializeField] private KeyCode playerAttackKey = KeyCode.Mouse1; 
 
-    // Update is called once per frame
     void Update()
     {
-        if(!IsOwner) return; //Only the owning client should check for input
+        if(!IsOwner) return; 
         if (Input.GetKeyDown(playerAttackKey))
         {
-            RequestAttackServerRpc(); //Request the server to perform the attack logic
+            RequestAttackServerRpc(); 
         }
     }
 
@@ -29,9 +30,10 @@ public class NetworkPlayerAttack : NetworkBehaviour
             NetworkPlayerHealth targetHealth = hit.GetComponent<NetworkPlayerHealth>();
             if(targetHealth != null)
             {
-                targetHealth.TakeDamage(attackDamage); //Apply damage to the target player
+                // UPDATE: Added OwnerClientId so you get the point if this melee attack kills them!
+                targetHealth.TakeDamage(attackDamage, OwnerClientId); 
                 Debug.Log($"Attacked {hit.name} for {attackDamage} damage");
-                break; //Only attack the first valid target hit
+                break; 
             }
         }
     }

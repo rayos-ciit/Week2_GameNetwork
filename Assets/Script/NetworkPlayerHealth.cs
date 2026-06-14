@@ -8,52 +8,43 @@ public class NetworkPlayerHealth : NetworkBehaviour
     [SerializeField] private int maxHealth = 100;
 
     [Header("UI Elements (Local Only)")]
-    [SerializeField] private GameObject localUIContainer; // Container for local player's UI elements
-    [SerializeField] private TMP_Text healthText; // Text element to display health
+    [SerializeField] private GameObject localUIContainer; 
+    [SerializeField] private TMP_Text healthText; 
     [SerializeField] private Slider healthSlider;
 
     [Header("Floating Damage Settings")]
-    [SerializeField] private GameObject damageTextPrefab; // Prefab for floating damage text
+    [SerializeField] private GameObject damageTextPrefab; 
 
     //Network-synced health variable
     public NetworkVariable<int> currentHealth = new NetworkVariable<int>(
         100,
-        NetworkVariableReadPermission.Everyone, //The host/Client/Server can read this variable
-        NetworkVariableWritePermission.Server //Only the server can change this value
+        NetworkVariableReadPermission.Everyone, 
+        NetworkVariableWritePermission.Server 
     );
     
     public override void OnNetworkSpawn()
     {
         if (IsServer)
         {
-            currentHealth.Value = maxHealth; //Initialize health on the server
+            currentHealth.Value = maxHealth; 
         }
 
         if (localUIContainer != null)
         {
             localUIContainer.SetActive(IsOwner);
         }
-        currentHealth.OnValueChanged += OnHealthChanged; //Subscribe to health change events
-        UpdateHealthUI(currentHealth.Value); //Initial UI update
+        currentHealth.OnValueChanged += OnHealthChanged; 
+        UpdateHealthUI(currentHealth.Value); 
     }
 
     public override void OnNetworkDespawn()
     {
-        //Optional: Handle any cleanup when the object is despawned
-        currentHealth.OnValueChanged -= OnHealthChanged; //Unsubscribe from health change events
+        currentHealth.OnValueChanged -= OnHealthChanged; 
     }
 
     public void OnHealthChanged(int previousValue, int newValue)
     {
-        //This method will be called on all clients when the health changes
-        Debug.Log($"Health changed from {previousValue} to {newValue}");
-        UpdateHealthUI(newValue); //Update the local player's UI
-
-        if (newValue <= 0)
-        {
-            //Handle player death (e.g., respawn, disable controls, etc.)
-            Debug.Log("Player has died!");
-        }
+        UpdateHealthUI(newValue); 
     }
 
     private void UpdateHealthUI(int healthValue)
@@ -64,26 +55,30 @@ public class NetworkPlayerHealth : NetworkBehaviour
         if (healthSlider != null) healthSlider.value = (float)healthValue / maxHealth;
     }
 
-    public void TakeDamage(int damage)
+    // UPDATE: Now accepts the shooterId to track who gets the kill
+    public void TakeDamage(int damage, ulong shooterId)
     {
-        if (IsServer)
+        if (!IsServer) return; //Only the server should modify health
+
+        currentHealth.Value -= damage; 
+        
+        // Ensure health doesn't go below 0 or above maxHealth (important for the Health PowerUp!)
+        currentHealth.Value = Mathf.Clamp(currentHealth.Value, 0, maxHealth);
+
+        // Tell all clients to spawn a floating damage text
+        SpawnDamageTextClientRpc(damage, transform.position);
+
+        if (currentHealth.Value <= 0)
         {
+            // Player has died!
             
-            if (!IsServer) return; //Only the server should modify health
-
-            currentHealth.Value -= damage; //Reduce health by damage amount
-            currentHealth.Value = Mathf.Clamp(currentHealth.Value, 0, maxHealth);
-
-            // Tell all clients to spawn a floating damage text at this position
-            SpawnDamageTextClientRpc(damage, transform.position);
-
-            if (currentHealth.Value <= 0)
+            // Give a point to the killer (If the ID is 999, it means a powerup killed them, which shouldn't happen, but we check just in case!)
+            if (GameManager.Instance != null && shooterId != 999)
             {
-                currentHealth.Value = 0; //Ensure health doesn't go below zero
-                //Handle player death (e.g., respawn, disable controls, etc.)
-                Debug.Log("Player has died!");
-                Respawn(); //Respawn the player after death
+                GameManager.Instance.AddScore(shooterId);
             }
+
+            Respawn(); 
         }
     }
 
@@ -92,7 +87,9 @@ public class NetworkPlayerHealth : NetworkBehaviour
     {
         if (damageTextPrefab == null) return;
 
-        // Spawn text slightly above the player's pivot point
+        // Don't spawn text if it was a health powerup (healing is negative damage)
+        if (damageAmount < 0) return;
+
         Vector3 offsetPosition = spawnPosition + Vector3.up * 2f;
         GameObject textInstance = Instantiate(damageTextPrefab, offsetPosition, Quaternion.identity);
 
@@ -105,24 +102,22 @@ public class NetworkPlayerHealth : NetworkBehaviour
 
     public void Respawn()
     {
-        currentHealth.Value = maxHealth; //Reset health to max
+        currentHealth.Value = maxHealth; 
         GameObject[] spawnPointObjects = GameObject.FindGameObjectsWithTag("SpawnPoint");
-        int randomIndex = Random.Range(0, spawnPointObjects.Length);
-        Transform selectedSpawnPoint = spawnPointObjects[randomIndex].transform;
-
-        CharacterController characterController = GetComponent<CharacterController>();
-
-        if (characterController != null)
+        
+        if (spawnPointObjects.Length > 0)
         {
-            characterController.enabled = false; //Disable character controller before moving
-        }
+            int randomIndex = Random.Range(0, spawnPointObjects.Length);
+            Transform selectedSpawnPoint = spawnPointObjects[randomIndex].transform;
 
-        transform.position = selectedSpawnPoint.position; //Move player to spawn point
-        transform.rotation = selectedSpawnPoint.rotation; //Reset player rotation to spawn point
+            CharacterController characterController = GetComponent<CharacterController>();
 
-        if (characterController != null)
-        {
-            characterController.enabled = true; //Re-enable character controller after moving
+            if (characterController != null) characterController.enabled = false; 
+
+            transform.position = selectedSpawnPoint.position; 
+            transform.rotation = selectedSpawnPoint.rotation; 
+
+            if (characterController != null) characterController.enabled = true; 
         }
     }
 }

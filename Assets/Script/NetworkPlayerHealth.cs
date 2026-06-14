@@ -11,9 +11,8 @@ public class NetworkPlayerHealth : NetworkBehaviour
     [SerializeField] private GameObject localUIContainer; 
     [SerializeField] private TMP_Text healthText; 
     [SerializeField] private Slider healthSlider;
-    [SerializeField] private GameObject damageTextPrefab;
-
-    [SerializeField] private AudioClip hitSoundEffect; 
+    [SerializeField] private GameObject damageTextPrefab; 
+    [SerializeField] private AudioClip hitSoundEffect;
 
     public NetworkVariable<int> currentHealth = new NetworkVariable<int>(100, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkVariable<bool> isInvulnerable = new NetworkVariable<bool>(false);
@@ -21,12 +20,10 @@ public class NetworkPlayerHealth : NetworkBehaviour
     private float invulnerabilityTimer = 0f;
     private const float INVULNERABILITY_DURATION = 2f;
 
-    // --- NEW: SPAWN LOCKING VARIABLES ---
     private Vector3 lockedSpawnPos;
     private Quaternion lockedSpawnRot;
     private bool isSpawnLocked = false;
 
-    // Visuals
     private Renderer playerRenderer;
     private Color originalColor;
 
@@ -42,7 +39,6 @@ public class NetworkPlayerHealth : NetworkBehaviour
 
         UpdateHealthUI(currentHealth.Value); 
 
-        // NEW: The moment the player connects, the server assigns them their permanent spawn!
         if (IsServer) 
         {
             currentHealth.Value = maxHealth; 
@@ -107,10 +103,10 @@ public class NetworkPlayerHealth : NetworkBehaviour
         GameObject textInstance = Instantiate(damageTextPrefab, offsetPosition, Quaternion.identity);
         FloatingText damageScript = textInstance.GetComponent<FloatingText>();
         if (damageScript != null) damageScript.Initialize(damageAmount);
+
         if (hitSoundEffect != null) AudioSource.PlayClipAtPoint(hitSoundEffect, spawnPosition);
     }
 
-    
     public void ClearSpawnLock()
     {
         isSpawnLocked = false;
@@ -118,11 +114,12 @@ public class NetworkPlayerHealth : NetworkBehaviour
 
     public void Respawn()
     {
+        if (!IsServer) return; 
+
         currentHealth.Value = maxHealth; 
         invulnerabilityTimer = INVULNERABILITY_DURATION; 
-        if (IsServer) isInvulnerable.Value = true;
+        isInvulnerable.Value = true;
 
-        // --- NEW: ONLY PICK A RANDOM SPAWN IF THEY DON'T HAVE ONE LOCKED ---
         if (!isSpawnLocked)
         {
             GameObject[] spawnPointObjects = GameObject.FindGameObjectsWithTag("SpawnPoint");
@@ -131,7 +128,7 @@ public class NetworkPlayerHealth : NetworkBehaviour
                 int randomIndex = Random.Range(0, spawnPointObjects.Length);
                 lockedSpawnPos = spawnPointObjects[randomIndex].transform.position;
                 lockedSpawnRot = spawnPointObjects[randomIndex].transform.rotation;
-                isSpawnLocked = true; // Lock it in!
+                isSpawnLocked = true; 
             }
             else
             {
@@ -141,12 +138,33 @@ public class NetworkPlayerHealth : NetworkBehaviour
             }
         }
 
+        // 1. Teleport the Server's authoritative body FIRST so it knows where you went!
+        ExecuteTeleport(lockedSpawnPos, lockedSpawnRot);
+
+        // 2. Fire the flare telling all clients to do the exact same thing instantly
+        TeleportClientRpc(lockedSpawnPos, lockedSpawnRot);
+    }
+
+    [ClientRpc]
+    private void TeleportClientRpc(Vector3 targetPos, Quaternion targetRot)
+    {
+        // Prevent the Host from doing this twice, since they already moved via the Server code above!
+        if (IsServer) return; 
+        
+        ExecuteTeleport(targetPos, targetRot);
+    }
+
+    private void ExecuteTeleport(Vector3 targetPos, Quaternion targetRot)
+    {
+        lockedSpawnPos = targetPos;
+        lockedSpawnRot = targetRot;
+        isSpawnLocked = true;
+
         CharacterController characterController = GetComponent<CharacterController>();
         if (characterController != null) characterController.enabled = false; 
 
-        // Send them to their permanently locked spot
-        transform.position = lockedSpawnPos; 
-        transform.rotation = lockedSpawnRot; 
+        transform.position = targetPos; 
+        transform.rotation = targetRot; 
 
         if (characterController != null) characterController.enabled = true; 
     }

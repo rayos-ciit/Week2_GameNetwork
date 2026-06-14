@@ -111,15 +111,17 @@ public class GameManager : NetworkBehaviour
         {
             statusText.gameObject.SetActive(true);
             statusText.text = Mathf.FloorToInt(countdownTimer.Value).ToString();
+            restartButton.gameObject.SetActive(false); // <-- FIX: Hide button during countdown
         }
         else if (matchState.Value == 2)
         {
-            statusText.gameObject.SetActive(false); // Hide text during gameplay
+            statusText.gameObject.SetActive(false); 
+            restartButton.gameObject.SetActive(false); // <-- FIX: Keep it hidden during gameplay
         }
         else if (matchState.Value == 3)
         {
             statusText.gameObject.SetActive(true);
-            restartButton.gameObject.SetActive(true);
+            restartButton.gameObject.SetActive(true); // Shows up only on Game Over
 
             if (hostScore.Value > clientScore.Value) statusText.text = "Player 1 Wins!";
             else if (clientScore.Value > hostScore.Value) statusText.text = "Player 2 Wins!";

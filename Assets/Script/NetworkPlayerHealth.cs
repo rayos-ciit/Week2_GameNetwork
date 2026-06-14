@@ -11,7 +11,9 @@ public class NetworkPlayerHealth : NetworkBehaviour
     [SerializeField] private GameObject localUIContainer; 
     [SerializeField] private TMP_Text healthText; 
     [SerializeField] private Slider healthSlider;
-    [SerializeField] private GameObject damageTextPrefab; 
+    [SerializeField] private GameObject damageTextPrefab;
+
+    [SerializeField] private AudioClip hitSoundEffect; 
 
     public NetworkVariable<int> currentHealth = new NetworkVariable<int>(100, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkVariable<bool> isInvulnerable = new NetworkVariable<bool>(false);
@@ -105,9 +107,10 @@ public class NetworkPlayerHealth : NetworkBehaviour
         GameObject textInstance = Instantiate(damageTextPrefab, offsetPosition, Quaternion.identity);
         FloatingText damageScript = textInstance.GetComponent<FloatingText>();
         if (damageScript != null) damageScript.Initialize(damageAmount);
+        if (hitSoundEffect != null) AudioSource.PlayClipAtPoint(hitSoundEffect, spawnPosition);
     }
 
-    // --- NEW: SPAWN UNLOCKING METHOD ---
+    
     public void ClearSpawnLock()
     {
         isSpawnLocked = false;

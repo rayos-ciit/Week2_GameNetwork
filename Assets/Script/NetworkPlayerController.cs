@@ -29,20 +29,36 @@ public class NetworkPlayerController : NetworkBehaviour
 
         float horizontalInput = Input.GetAxisRaw("Horizontal");
         float verticalInput = Input.GetAxisRaw("Vertical");
-        Vector2 inputDirection = new Vector2(horizontalInput, verticalInput);
         bool dashRequested = Input.GetKeyDown(KeyCode.Space);
 
-        if (IsServer) MovePlayer(inputDirection, dashRequested);
-        else MovePlayerRPC(inputDirection, dashRequested);
+        // Calculate absolute world-space movement locally using the perfectly smooth local Camera!
+        // This makes your client completely immune to network delay when calculating movement angles.
+        Vector3 camForward = Camera.main.transform.forward;
+        camForward.y = 0; 
+        camForward.Normalize();
+
+        Vector3 camRight = Camera.main.transform.right;
+        camRight.y = 0;
+        camRight.Normalize();
+
+        // Calculate the absolute world direction you want to move in
+        Vector3 absoluteMoveDirection = (camForward * verticalInput) + (camRight * horizontalInput);
+        if (absoluteMoveDirection.magnitude > 1) absoluteMoveDirection.Normalize();
+
+        // Grab exact mouse rotation from the camera
+        float exactYaw = Camera.main.transform.eulerAngles.y;
+
+        if (IsServer) MovePlayer(absoluteMoveDirection, exactYaw, dashRequested);
+        else MovePlayerRPC(absoluteMoveDirection, exactYaw, dashRequested);
     }
 
     [Rpc(SendTo.Server)]
-    private void MovePlayerRPC(Vector2 movementInput, bool dashRequested)
+    private void MovePlayerRPC(Vector3 calculatedMoveDir, float clientYaw, bool dashRequested)
     {
-        MovePlayer(movementInput, dashRequested);
+        MovePlayer(calculatedMoveDir, clientYaw, dashRequested);
     }
 
-    private void MovePlayer(Vector2 movementInput, bool dashRequested)
+    private void MovePlayer(Vector3 calculatedMoveDir, float clientYaw, bool dashRequested)
     {
         if (dashCooldownTimer > 0) dashCooldownTimer -= Time.deltaTime;
         if (dashTimer > 0) dashTimer -= Time.deltaTime;
@@ -53,14 +69,14 @@ public class NetworkPlayerController : NetworkBehaviour
             dashCooldownTimer = dashCooldown;
         }
 
-        // MOVEMENT: Now cleanly moves forward/back/left/right relative to your spine!
-        Vector3 moveDirection = (transform.forward * movementInput.y) + (transform.right * movementInput.x);
-        if (moveDirection.magnitude > 1) moveDirection.Normalize();
+        // Snap the server's version of the model to match the client's camera
+        transform.rotation = Quaternion.Euler(0f, clientYaw, 0f);
 
         float currentSpeed = moveSpeed;
         if (dashTimer > 0) currentSpeed = dashSpeed; 
         else if (shooter != null && shooter.isCharging) currentSpeed *= 0.5f; 
 
-        controller.Move((moveDirection * currentSpeed + Vector3.down * 5f) * Time.deltaTime);
+        // MOVEMENT: Now cleanly moves along the exact world-space trajectory the client requested!
+        controller.Move((calculatedMoveDir * currentSpeed + Vector3.down * 5f) * Time.deltaTime);
     }
 }

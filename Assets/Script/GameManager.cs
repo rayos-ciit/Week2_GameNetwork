@@ -43,6 +43,7 @@ public class GameManager : NetworkBehaviour
 
         restartButton.gameObject.SetActive(false);
         restartButton.onClick.AddListener(() => { RequestRestartServerRpc(); });
+        restartButton.onClick.AddListener(() => { OnRestartButtonClicked(); });
     }
 
     void Update()
@@ -104,29 +105,36 @@ public class GameManager : NetworkBehaviour
 
         if (matchState.Value == 0)
         {
-            statusText.gameObject.SetActive(true);
+            if (!statusText.gameObject.activeSelf) statusText.gameObject.SetActive(true);
             statusText.text = "Waiting for Player 2...";
         }
         else if (matchState.Value == 1)
         {
-            statusText.gameObject.SetActive(true);
+            if (!statusText.gameObject.activeSelf) statusText.gameObject.SetActive(true);
             statusText.text = Mathf.FloorToInt(countdownTimer.Value).ToString();
-            restartButton.gameObject.SetActive(false); // <-- FIX: Hide button during countdown
+            
+            // Turn off safely
+            if (restartButton.gameObject.activeSelf) restartButton.gameObject.SetActive(false); 
         }
         else if (matchState.Value == 2)
         {
-            statusText.gameObject.SetActive(false); 
-            restartButton.gameObject.SetActive(false); // <-- FIX: Keep it hidden during gameplay
+            if (statusText.gameObject.activeSelf) statusText.gameObject.SetActive(false); 
+            if (restartButton.gameObject.activeSelf) restartButton.gameObject.SetActive(false);
         }
         else if (matchState.Value == 3)
         {
-            statusText.gameObject.SetActive(true);
-            restartButton.gameObject.SetActive(true); // Shows up only on Game Over
+            // FIX: Only set them active if they aren't already! This stops the button from breaking!
+            if (!statusText.gameObject.activeSelf) statusText.gameObject.SetActive(true);
+            if (!restartButton.gameObject.activeSelf) restartButton.gameObject.SetActive(true);
 
             if (hostScore.Value > clientScore.Value) statusText.text = "Player 1 Wins!";
             else if (clientScore.Value > hostScore.Value) statusText.text = "Player 2 Wins!";
             else statusText.text = "Draw!";
         }
+    }
+    public void OnRestartButtonClicked()
+    {
+        RequestRestartServerRpc();
     }
 
     [ServerRpc(RequireOwnership = false)]
